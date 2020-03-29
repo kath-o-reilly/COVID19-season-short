@@ -4,7 +4,7 @@
 # owner: Kath O'Reilly (LSHTM)
 # Steps: bring in the data from Copernicus, WorldPop, and WHO
 # for each country;
-# 1) find temp & humidity over Dec-14Mar and adjust for population
+# 1) find temp & humidity over 01Jan-14Mar, adjusting for population
 # 2) identify current WHO transmission status
 # 3) couple of plots
 
@@ -84,9 +84,10 @@ shpdat0$humd_mean_14Mar20 <- shpdat0$humd_mean_14Mar20_pa <- 0  # temp on the 14
 shpdat0$humd_mean_3mth <- shpdat0$humd_mean_3mth_pa <- 0        # temp Jan-14Mar
 
 dates <- seq(as.Date("2019/11/01"), as.Date("2020/03/14"), "days")  # use this sequence
+# check we've got the right indexes for dates
 dates[62] 
 dates[135]
-length(dates[122]:dates[31])
+length(dates[122]:dates[31]) # taking summary of 92 days in total.
 
 # loop through - this takes a while so next time should really have this in parallel
 getRas_funct <- function(i,admn0,tmean,popdat,humid){
@@ -126,9 +127,9 @@ getRas_funct <- function(i,admn0,tmean,popdat,humid){
     humd_all <- rbind(humd_all,hvec)  # increasing rows
   }
   temp_mean_3mth <- mean(apply(temp_all,2,mean))
-  temp_mean_3mth_pa <- sum(apply(temp_all,2,mean)*pop)       # temp Dec/Jan/Feb
+  temp_mean_3mth_pa <- sum(apply(temp_all,2,mean)*pop)       # temp 01Jan-14Mar
   hmid_mean_3mth <- mean(apply(humd_all,2,mean))
-  hmid_mean_3mth_pa <- sum(apply(humd_all,2,mean)*pop)       # temp Dec/Jan/Feb
+  hmid_mean_3mth_pa <- sum(apply(humd_all,2,mean)*pop)       # temp 01Jan-14Mar
   write.csv(paste0(as.character(shpdat0$CNTRY_TERR[i]," ",i," complete")),file=paste0("Checks/check_",i,".csv"))
   return(list=c(temp_mean_14Mar20=temp_mean_14Mar20,temp_mean_14Mar20_pa=temp_mean_14Mar20_pa,
                 hmid_mean_14Mar20=hmid_mean_14Mar20,hmid_mean_14Mar20_pa=hmid_mean_14Mar20_pa,
@@ -190,7 +191,7 @@ admn0$humd_mean_3mth <- shpdat0$humd_mean_3mth
 admn0$humd_mean_3mth_pa <- shpdat0$humd_mean_3mth 
 
 setwd("~/Documents/GitHub/COVID19-season-short/Plots")
-# plot these to check
+# plot these to check we're outputting something sensible
 jpeg("world_temp_14MarB.jpeg",height=1000,width=2000)
 tm_shape(admn0) + tm_polygons("temp_mean_14Mar20",palette="PRGn") + 
   tm_layout(legend.position=c("left","bottom"),legend.text.size=2,  # ok this is being recognised
@@ -231,7 +232,6 @@ tm_shape(admn0) + tm_polygons("humd_mean_3mth_pa",palette="PRGn") +
   tm_layout(legend.position=c("left","bottom"),legend.text.size=2,  # ok this is being recognised
             legend.title.size=2.2)
 dev.off()
-# ok cool...
 
 # Add WHO data
 
@@ -252,9 +252,9 @@ shpdat0$transmission <- sitrep$Transmission.classification[oo]
 shpdat0$days_since_last_case <- sitrep$Days.since.last.reported.case[oo]
 
 # cleaning
-# Internationalconveyance(DiamondPrincess)  is always there...
+# ember dat from... the Diamond princess data is included in sitreps - ignore.
 table(sitrep$Total.deaths)
-table(shpdat0$deaths) # so that hasn't worked.
+table(shpdat0$deaths) 
 
 table(sitrep$Transmission.classification)
 table(shpdat0$transmission)
@@ -269,7 +269,7 @@ admn0$deathsGrp <- shpdat0$deathsGrp
 table(admn0$transmission)
 
 #####################################################
-# Mapping
+# Mapping to shpaefiles countries
 #####################################################
 
 # choose a colour-scheme - using https://colorbrewer2.org/ 
@@ -282,7 +282,8 @@ tm_shape(admn0) + tm_polygons(title="WHO transmission status\n as of 24 Mar 2020
             legend.title.size=4)
 dev.off()
 
-# so NOW... I think it's better to link directly to sitrep rather than other way round (too messy)
+# so now... I think it's better to link directly to sitrep rather than other way round 
+# (the other way round is too messy)
 # dim(sitrep)
 
 head(sitrep)
@@ -290,12 +291,12 @@ oo <- match(as.character(sitrep$ISO_3_CODE),as.character(shpdat0$ISO_3_CODE))
 sum(is.na(oo))
 
 sitrep$temp_mean_14Mar20 <- shpdat0$temp_mean_14Mar20[oo]
-sitrep$temp_mean_14Mar20_pa <- shpdat0$temp_mean_14Mar20_pa[oo] # temp on the 14Mar
+sitrep$temp_mean_14Mar20_pa <- shpdat0$temp_mean_14Mar20_pa[oo] # temp on the 14Mar - populatin adjusted
 sitrep$temp_mean_3mth <- shpdat0$temp_mean_3mth[oo]
-sitrep$temp_mean_3mth_pa <- shpdat0$temp_mean_3mth_pa[oo]        # temp Dec/Jan/Feb
+sitrep$temp_mean_3mth_pa <- shpdat0$temp_mean_3mth_pa[oo]        # temp 01Jan-14Mar
 sitrep$humd_mean_14Mar20 <- shpdat0$humd_mean_14Mar20[oo]
 sitrep$humd_mean_14Mar20_pa <- shpdat0$humd_mean_14Mar20_pa[oo]  # temp on the 14Mar
-sitrep$humd_mean_3mth <- shpdat0$humd_mean_3mth[oo]
+sitrep$humd_mean_3mth <- shpdat0$humd_mean_3mth[oo]              # 01Jan-14Mar
 sitrep$humd_mean_3mth_pa <- shpdat0$humd_mean_3mth[oo] 
 
 sitrep[is.na(oo),]
@@ -371,7 +372,7 @@ p1 + geom_text(data=labtrs,aes(label=labs),#nudge_x = 0.5,#check_overlap = T,#di
                segment.colour = NA,size=12)
 dev.off()
 # notes:
-# BFA has <20% humidity and local transmission
+# BFA (Burkina Faso) has <20% humidity and local transmission
 
 
 
