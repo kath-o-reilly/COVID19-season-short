@@ -7,6 +7,7 @@ This repo is provided to replicate the short analysis we've been working on. Ple
 ### Data
 
 All the data used to carry out the analysis is provided in the _Data_ folder. Please see _WHO_SITREP_COVID_24032020_incTemp_v2.csv_ for the details of each country.
+The tiff files generated are too large to add to GitHub. If you want to run the code with the full data please contact and I will send directly.
 
 ### Code
 
